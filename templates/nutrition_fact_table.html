@@ -1,0 +1,45 @@
+<table id="nutrition_data_table" class="data_table">
+    [% FOREACH group IN table_group %]
+    
+        [% FOREACH tablehead IN group.header %]
+            <tr>
+            <thead class="nutriment_header">
+            <th>
+                [% tablehead.title %]
+            </th>
+            [% FOREACH tableheadvalue IN tablehead.columnValue %]
+                <th class = [% "nutriment_value${tableheadvalue.colclass} ${tableheadvalue.col}" %]>
+                    [% tableheadvalue.colname %]
+                </th>
+            [% END %]
+    
+            </thead>
+            </tr>
+        [% END %]
+    
+        [% FOREACH tablerow IN group.rows %]
+        
+            <tr id=[% "nutriment_{$tablerow.nid}_tr" %]  class=[% "nutriment_${tablerow.class}" %]>
+            
+            <td class="nutriment_label">
+                [% tablerow.name %]
+            </td>
+            
+            [% FOREACH tablevalue IN tablerow.value %]
+                <td class=[% "nutriment_value${tablevalue.colclass}" %] property = [% tablevalue.property %]>
+                    <span class="compare_percent"> 
+                        [% tablevalue.percent %]
+                    <span>
+                    <span class="compare_value"> 
+                        [% tablevalue.rowvalue %]
+                    </span>
+                </td>
+            [% END %]
+            
+            </tr>
+        
+        [% END %]
+    
+    [% END %]
+    </table>
+    
