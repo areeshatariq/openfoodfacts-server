@@ -1,0 +1,110 @@
+[% IF tagtype.defined %]
+    [% IF !(groupby_tagtype.defined) %]
+        [% IF tagid2.defined %]
+            <p>
+                <a href=/[% tag_type_plural %]>[% lang('${tagtype}_s').ucfirst %]</a>: <a href="[% newtagidpath %]">[% display_tag %]</a>
+                <br>
+                <a href=/[% tag_type_plural %]>[% lang('${tagtype2}_s').ucfirst %]</a>: <a href="[% newtagidpath2 %]">[% display_tag2 %]</a>
+            </p>
+        [% ELSE %]
+            <p>
+                <a href=/[% tag_type_plural %]>[% lang('${tagtype}_s').ucfirst %]</a>: [% display_tag %]
+            </p>
+            [% tag_html %]
+            <div class="share_button right" style="float:right;margin-top:-10px;margin-left:10px;display:none;">
+                <a href="[% canon_url %]" class="button small" title="[% title %]">
+                    [% display_icon('share') %]
+                    <span class="show-for-large-up">[% lang('share') %]</span>
+                </a>
+            </div>
+
+            <!-- weblinks -->
+            [% IF weblinks_count >= 0 %]
+                <div style="float:right;width:300px;margin-left:20px;margin-bottom:20px;padding:10px;border:1px solid #cbe7ff;background-color:#f0f8ff;">
+                    <h3>[% lang('tag_weblinks') %]</h3>
+                    <ul>
+                        [% FOREACH weblink IN weblinks %]
+                            <li>
+                                <a href="[% weblink.encode_entities_href %]" itemprop="sameAs" hreflang="[% weblink.encode_entities_hreflang %]" title="[% weblink.encode_entities_title %]">
+                                    [% weblink.encode_entities_text %]
+                                </a>
+                            </li>
+                        [% END %]
+                    </ul>
+                </div>
+            [% END %]
+
+            <!-- display_parents_and_children -->
+            [% display_parents_and_children %]
+
+            <!-- description -->
+            [% FOREACH field IN options_display_tag %]
+
+                <!-- Section title? -->
+                [% FOREACH item IN field.title_array %]
+                    [% IF item.field == 'defined' %]
+                        <h3> [% item.title %] </h3>
+                    [% END %]
+                [% END %]
+
+                <!-- table -->
+                [% IF table == 'defined' %]
+                    <div style="overflow-x:auto;">
+                        <table class="exposure_table">
+                            <thead>
+                                <tr>
+                                    <th>&nbsp;</th>
+                                    [% FOREACH grp IN groups %]
+                                        <th>
+                                            [% lang('${grp.group}') %]
+                                        </th>
+                                    [% END %]
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>&nbsp;</td>
+                                    [% FOREACH grp IN groups %]
+                                        <td style="background-color:black;color:white;">
+                                            [% lang("${grp.group}_age") %]
+                                        </td>
+                                    [% END %]
+                                </tr>
+
+                                    [% FOREACH item IN percentiles %]
+                                        <tr>
+                                            <th>
+                                                [% lang('exposure_title_${item.percentile}') %]<br>
+                                                [% lang('exposure_description_${item.percentile}') %]
+                                            </th>
+
+                                            [% FOREACH item IN groups %]
+                                                <td>
+                                                    [% IF item.dose != 'undef'%]
+                                                        &nbsp;
+                                                    [% ELSE %]
+                                                        <img src="/images/misc/[% icons_dose %].svg" alt="[% lang("additives_efsa_evaluation_exposure_${item.percentile}_greater_than_${item.dose}") %]">
+                                                    [% END %]
+                                                </td>
+                                            [% END %]
+                                        </tr>
+                                    [% END %]
+                            </tbody>
+                        </table>
+                    </div>
+                    [% FOREACH item IN doses %]
+                        <p>
+                            <img src="/images/misc/[% item.icons_dose %].svg" width="30" height="30" style="vertical-align:middle" alt="[% lang('additives_efsa_evaluation_exposure_greater_than_${item.dose}') %]"> 
+                            <span>: [% lang("additives_efsa_evaluation_exposure_greater_than_${item.dose}") %]</span>
+                        </p>
+                    [% END %]
+
+                [% END %]
+                <!-- /table -->
+
+            [% END %]
+            <!-- /description -->
+        [% END %]
+        <h2>[% products_title %]</h2>
+    [% END %]
+[% END %]

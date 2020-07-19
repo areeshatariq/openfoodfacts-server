@@ -2815,6 +2815,11 @@ sub display_tag($) {
 	local $log->context->{tagtype2} = $tagtype2;
 	local $log->context->{tagid2} = $tagid2;
 
+	my $template_data_ref = {
+		lang => \&lang,
+		display_icon => \&display_icon,
+	};
+
 	# Add a meta robot noindex for pages related to users
 	if ( ((defined $tagtype) and ($tagtype =~ /^(users|correctors|editors|informers|correctors|photographers|checkers)$/))
 		or ((defined $tagtype2) and ($tagtype2 =~ /^(users|correctors|editors|informers|correctors|photographers|checkers)$/)) ) {
@@ -2955,6 +2960,8 @@ sub display_tag($) {
 			}
 		}
 
+		$template_data_ref->{weblinks_count} = $#weblinks;
+
 		if (($#weblinks >= 0)) {
 			$weblinks_html .= '<div style="float:right;width:300px;margin-left:20px;margin-bottom:20px;padding:10px;border:1px solid #cbe7ff;background-color:#f0f8ff;"><h3>' . lang('tag_weblinks') . '</h3><ul>';
 			foreach my $weblink (@weblinks) {
@@ -2962,6 +2969,13 @@ sub display_tag($) {
 				$weblinks_html .= ' hreflang="' . encode_entities($weblink->{hreflang}) . '"' if defined $weblink->{hreflang};
 				$weblinks_html .= ' title="' . encode_entities($weblink->{title}) . '"' if defined $weblink->{title};
 				$weblinks_html .= '>' . encode_entities($weblink->{text}) . '</a></li>';
+
+				push @{$template_data_ref->{weblinks}}, {
+					encode_entities_href => encode_entities($weblink->{href}),
+					encode_entities_hreflang => encode_entities($weblink->{hreflang}),
+					encode_entities_title => encode_entities($weblink->{title}),
+					encode_entities_text => encode_entities($weblink->{text}),
+				};
 			}
 
 			$weblinks_html .= '</ul></div>';
@@ -2974,6 +2988,8 @@ sub display_tag($) {
 
 	my $icid = $tagid;
 	(defined $icid) and $icid =~ s/^.*://;
+
+	$template_data_ref->{tagtype} = $tagtype;
 
 	if (defined $tagtype) {
 
@@ -2996,8 +3012,13 @@ sub display_tag($) {
 			}
 
 			# Section title?
+			my @title_array;
 
 			if ($field =~ /^title:/) {
+				push (@title_array, {
+					field => 'defined'
+					title => $title,
+				});
 				$field = $';
 				my $title = lang($tagtype . "_" . $field);
 				($title eq "") and $title = lang($field);
@@ -3005,6 +3026,11 @@ sub display_tag($) {
 				$log->debug("display_tag - section title", { field => $field }) if $log->is_debug();
 				next;
 			}
+
+			push @{$template_data_ref->{options_display_tag}}, {
+				field_orig => $field,
+				title_array => \@title_array,
+			};
 
 
 			# Special processing
@@ -3063,6 +3089,8 @@ sub display_tag($) {
 CSS
 ;
 
+					$template_data_ref->{table} = 'defined';
+
 					my $table = <<HTML
 <div style="overflow-x:auto;">
 <table class="exposure_table">
@@ -3093,6 +3121,10 @@ HTML
 
 					foreach my $percentile (@percentiles) {
 
+						push @{$template_data_ref->{percentiles}}, {
+							percentile => $percentile,
+						};
+
 						$table .= "<tr><th>" . lang("exposure_title_" . $percentile) . "<br>("
 							. lang("exposure_description_" . $percentile) . ")</th>";
 
@@ -3101,6 +3133,12 @@ HTML
 							$table .= "<td>";
 
 							my $dose = $exposure{$percentile}{$group};
+
+							push @{$template_data_ref->{groups}}, {
+								group => $group,
+								dose => $dose,
+								icons_dose => $icons{$dose},
+							};
 
 							if (not defined $dose ) {
 								$table .= "&nbsp;";
@@ -3123,6 +3161,12 @@ HTML
 
 					foreach my $dose (@doses) {
 						if (exists $doses{$dose}) {
+
+							push @{$template_data_ref->{doses}}, {
+								icons_dose => $icons{$dose},
+								dose => $dose,
+							};
+
 							$description .= "<p>" . '<img src="/images/misc/' . $icons{$dose} . '.svg" width="30" height="30" style="vertical-align:middle" alt="'
 									. lang("additives_efsa_evaluation_exposure_greater_than_" . $dose) . '"> <span>: '
 									. lang("additives_efsa_evaluation_exposure_greater_than_" . $dose) . "</span></p>\n";
@@ -3179,12 +3223,24 @@ HTML
 
 					$description .= "<p>" . $properties{$tagtype}{$canon_tagid}{$propertyid{abstract}} ;
 
+					push @{$template_data_ref->{propertyid_abstract}}, {
+						property_id_abstract => 'defined', 
+						current_link => $properties{$tagtype}{$canon_tagid}{$propertyid{abstract}},
+					};
+
 					if (defined $propertyid{url}) {
 
 						my $lang_site = lang($site);
 						if ((defined $lang_site) and ($lang_site ne "")) {
 							$site = $lang_site;
 						}
+
+						push @{$template_data_ref->{propertyid_url}}, {
+							property_id_url => 'defined', 
+							site => $site,
+							properties_tagtype_url => $properties{$tagtype}{$canon_tagid}{$propertyid{url}},
+						};
+						
 						$description .= ' - <a href="' . $properties{$tagtype}{$canon_tagid}{$propertyid{url}} . '">' . $site . '</a>';
 					}
 
@@ -3374,7 +3430,7 @@ HTML
 					$log->debug("display_tag - property not defined", { tagtype => $tagtype, property_id => $propertyid{property}, canon_tagid => $canon_tagid }) if $log->is_debug();
 			}
 
-		}
+		} # end of for loop
 
 		# Remove titles without content
 
@@ -3674,6 +3730,16 @@ HTML
 		}
 	}
 
+	$template_data_ref->{groupby_tagtype} = $request_ref->{groupby_tagtype};
+	$template_data_ref->{tagid2} = $tagid2;
+	$template_data_ref->{tag_type_plural} = $tag_type_plural{$tagtype}{$lc};
+	$template_data_ref->{newtagidpath} = $newtagidpath;
+	$template_data_ref->{display_tag} = $display_tag;
+	$template_data_ref->{tag_type_plural2} = $tag_type_plural{$tagtype2}{$lc};
+	$template_data_ref->{tagtype2} = $tagtype2;
+	$template_data_ref->{newtagid2path} = $newtagid2path;
+	$template_data_ref->{display_tag2} = $display_tag2;
+
 	if (not defined $request_ref->{groupby_tagtype}) {
 		if (defined $tagid2) {
 			$html .= "<p><a href=\"/" . $tag_type_plural{$tagtype}{$lc} . "\">" . ucfirst(lang($tagtype . '_s')) . "</a>" . separator_before_colon($lc)
@@ -3688,6 +3754,10 @@ HTML
 
 			$tag_html =~ s/.*<\/a>(<br \/>)?//;	# remove link, keep only tag logo
 
+			$template_data_ref->{tag_html} = $tag_html;
+			$template_data_ref->{canon_url} = $request_ref->{canon_url};
+			$template_data_ref->{title} = $title;
+
 			$html .= $tag_html;
 
 			my $share = lang('share');
@@ -3699,9 +3769,12 @@ HTML
 </a></div>
 HTML
 ;
+			$template_data_ref->{display_parents_and_children} = display_parents_and_children($lc, $tagtype, $canon_tagid);
 
 			$html .= $weblinks_html . display_parents_and_children($lc, $tagtype, $canon_tagid) . $description;
 		}
+
+		$template_data_ref->{products_title} = $products_title;
 
 		$html .= "<h2>" . $products_title . "</h2>\n";
 	}
