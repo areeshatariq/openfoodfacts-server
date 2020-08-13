@@ -1,0 +1,11 @@
+[% IF action == 'display' %]
+    <p>[% lang("import_products_categories_from_public_database_description") %]</p>
+    <!-- Start form multipart -->
+        <input type="submit" class="button small" value="[% lang('import_products_categories') %]">
+        <input type="hidden" name="action" value="process">
+    <!-- end form -->
+[% ELSIF action == 'process' %]
+    <p>job_id: [% job_id %]</p>
+    <a href="/cgi/import_products_categories_job_status.pl?import_id=[% import_id %]">status</a>
+    Poll: <div id="poll"></div> Result:<div id="result"></div>
+[% END %]

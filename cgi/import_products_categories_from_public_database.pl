@@ -51,6 +51,10 @@ use Text::CSV();
 
 ProductOpener::Display::init();
 
+my $template_data_ref = {
+	lang => \&lang,
+};
+
 my $action = param('action') || 'display';
 
 my $title = lang("import_products_categories_from_public_database");
@@ -59,6 +63,8 @@ my $html = '';
 if (not defined $Owner_id) {
 	display_error(lang("no_owner_defined"), 200);
 }
+
+$template_data_ref->{action} = $action;
 
 if ($action eq "display") {
 
@@ -87,6 +93,9 @@ elsif ($action eq "process") {
 
 	my $job_id = $minion->enqueue(import_products_categories_from_public_database => [ $args_ref ]
 		=> { queue => $server_options{minion_local_queue}});
+
+	$template_data_ref->{job_id} = $job_id;
+	$template_data_ref->{import_id} = $import_id;
 
 	$html .= "<p>job_id: " . $job_id . "</p>";
 
@@ -123,6 +132,9 @@ JS
 
 
 }
+
+$tt->process('import_products_categories_from_public_database.tt.html', $template_data_ref, \$html);
+$html .= "<p>" . $tt->error() . "</p>";
 
 display_new( {
 	title=>$title,
